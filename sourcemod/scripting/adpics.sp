@@ -119,6 +119,12 @@ public Action:Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroa
 public Action:Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	new iClient = GetClientOfUserId(GetEventInt(event, "userid"));
+
+	if (iClient == 0)
+	{
+		//Client left game
+		return;
+	}
 	
 	// Don't show to donators
 //	if (!g_ShowAd[iClient])
