@@ -151,7 +151,7 @@ public Action:Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroa
 public OverlayClean(iClient)
 {
 	
-	if(Client_IsIngame(iClient) && Client_IsValid(iClient))
+	if(Client_IsIngame(iClient))
 	{
 		Client_SetScreenOverlay(iClient, "off");
 		Client_SetScreenOverlay(iClient, "");			
@@ -161,7 +161,7 @@ public OverlayClean(iClient)
 
 stock OverlaySet(any:iClient, String:overlay[])
 {
-	if(Client_IsIngame(iClient) && Client_IsValid(iClient))
+	if(Client_IsIngame(iClient))
 	{
 		Client_SetScreenOverlay(iClient, overlay);
 	}
