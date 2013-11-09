@@ -119,6 +119,12 @@ public Action:Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroa
 public Action:Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	new iClient = GetClientOfUserId(GetEventInt(event, "userid"));
+
+	if (iClient == 0)
+	{
+		//Client left game
+		return;
+	}
 	
 	// Don't show to donators
 //	if (!g_ShowAd[iClient])
@@ -133,12 +139,7 @@ public Action:Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroa
 		OverlaySet(iClient, g_sOverlayPaths[g_AdRotation[iClient]]);
 		
 		// Bump the rotation now that we've shown an ad
-		g_AdRotation[iClient] = g_AdRotation[iClient] + 1;
-
-		if (g_AdRotation[iClient] >= g_dOverlayAdsNum)
-		{
-			g_AdRotation[iClient] = 0;
-		}
+		g_AdRotation[iClient] = (g_AdRotation[iClient] + 1) % g_dOverlayAdsNum;
 		
 		// Reset the interval now that we've shown an ad
 		g_AdInterval[iClient] = 0;
@@ -151,7 +152,7 @@ public Action:Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroa
 public OverlayClean(iClient)
 {
 	
-	if(Client_IsIngame(iClient) && Client_IsValid(iClient))
+	if(Client_IsIngame(iClient))
 	{
 		Client_SetScreenOverlay(iClient, "off");
 		Client_SetScreenOverlay(iClient, "");			
@@ -161,7 +162,7 @@ public OverlayClean(iClient)
 
 stock OverlaySet(any:iClient, String:overlay[])
 {
-	if(Client_IsIngame(iClient) && Client_IsValid(iClient))
+	if(Client_IsIngame(iClient))
 	{
 		Client_SetScreenOverlay(iClient, overlay);
 	}
