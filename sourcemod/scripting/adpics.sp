@@ -9,6 +9,7 @@
 // * 2013-11-06	-	1.1.1		-	Remove debug, tidy/unify code, use PLUGIN_VERSION for ver. cvar, remove timers, remove translations, remove colors, remove admin immunity/vip flag, 
 // * 2013-11-06	-	1.1.2		-	add tests for interval/frequency 
 // * 2013-11-08	-	1.1.3		-	Merge Dr. Nick's client test/minor cleanup, reset interval/frequency on disconnect, fix convar name for version, add donator test so we aren't tied to donator plugin
+// * 2013-11-11	-	1.1.4		-	Prevent spies from triggering ad (eventually detect dead ringer)
 //	------------------------------------------------------------------------------------
 
 #pragma semicolon 1
@@ -17,9 +18,10 @@
 #include <sourcemod>
 #include <smlib>							// Client_IsIngame, Client_SetScreenOverlay
 #include <donator>							// IsPlayerDonator, OnPostDonatorCheck
+#include <tf2_stocks>						// TF2_IsPlayerInCondition
 
 // DEFINES
-#define PLUGIN_VERSION			"1.1.3"
+#define PLUGIN_VERSION			"1.1.4"
 #define PLUGIN_PRINT_NAME		"[AdPics]"					// Used for self-identification in chat/logging
 #define PATH_CFG_FILE			"configs/adpics.txt"		// This is where the overlays are called out
 
@@ -134,6 +136,10 @@ public Action:Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroa
 //		if (!g_bShowAd[iClient])
 //			return;
 	
+	// Weed out dead ringer - temp weed out spies
+	if (TF2_GetPlayerClass(iClient) == TFClass_Spy)
+		return;
+
 	// Whats our skip count?
 	if (!g_iAdInterval[iClient])
 	{
