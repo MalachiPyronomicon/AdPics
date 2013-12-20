@@ -11,6 +11,7 @@
 // * 2013-11-08	-	1.1.3		-	Merge Dr. Nick's client test/minor cleanup, reset interval/frequency on disconnect, fix convar name for version, add donator test so we aren't tied to donator plugin
 // * 2013-11-11	-	1.1.4		-	Prevent spies from triggering ad (eventually detect dead ringer)
 // * 2013-11-27	-	1.1.5		-	Correctly detect dead ringer
+// * 2013-11-27	-	1.1.6		-	Donators only see first ad once, add sm_adpics_bump admin cmd to show ads manually 
 //	------------------------------------------------------------------------------------
 
 #pragma semicolon 1
@@ -22,7 +23,7 @@
 #include <tf2_stocks>						// TF2_IsPlayerInCondition, TF_DEATHFLAG_DEADRINGER
 
 // DEFINES
-#define PLUGIN_VERSION			"1.1.5"
+#define PLUGIN_VERSION			"1.1.6"
 #define PLUGIN_PRINT_NAME		"[AdPics]"					// Used for self-identification in chat/logging
 #define PATH_CFG_FILE			"configs/adpics.txt"		// This is where the overlays are called out
 
@@ -32,6 +33,7 @@ new g_iOverlayFrequency;					// How often we show a client ads
 new g_iOverlayAdsNum;						// Total Number of ads
 new String:g_sOverlayPaths[256][256];		// Overlays Paths
 new bool:g_bShowAd[MAXPLAYERS+1];			// Do we show ads to a client
+new bool:g_bShowFirstAdOnce[MAXPLAYERS+1];	// Did we show first ad
 new g_iAdRotation[MAXPLAYERS+1];			// Where are we in the ad rotation
 new g_iAdInterval[MAXPLAYERS+1];			// Where are we in a client's ad interval
 new bool:g_bUseDonators = false;			// Are we using the donator functionality
@@ -70,6 +72,7 @@ public OnPluginStart()
 	// Convars
 	CreateConVar("sm_adpics", PLUGIN_VERSION, "Version of AdPics plugin", FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
 	g_hOverlayFrequency = CreateConVar("sm_adpics_frequency", "5", "Show ads every Nth death.");
+	RegAdminCmd("sm_adpics_bump", Command_Bump, ADMFLAG_KICK, "Manually rotates through ads.");
 	
 	// Exec Config
 	AutoExecConfig(true);
@@ -110,6 +113,21 @@ public OnPostDonatorCheck(iClient)
 	{
 		g_bShowAd[iClient] = true;
 	}
+
+	g_bShowFirstAdOnce[iClient] = false;
+
+	return;
+}
+
+
+// Reset vars
+public OnClientPostAdminCheck(iClient)
+{
+	// Only reset if we're NOT using donators to avoid race condition
+	if (!g_bUseDonators)
+	{
+		g_bShowAd[iClient] = true;
+	}
 	
 	g_iAdInterval[iClient] = 0;
 	g_iAdRotation[iClient] = 0;
@@ -132,18 +150,29 @@ public Action:Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroa
 	if (iClient == 0)
 		return;
 	
-	// Don't show to donators
-//	if (g_bUseDonators)
-//		if (!g_bShowAd[iClient])
-//			return;
-	
-	// Weed out dead ringer - temp weed out spies
+	// Weed out dead ringer fake death event
 	new death_flags = GetEventInt(event, "death_flags");
 	if((death_flags & TF_DEATHFLAG_DEADRINGER) == TF_DEATHFLAG_DEADRINGER)
 	{
 		return;
 	}
 
+	// Only show to donators once
+	if (g_bUseDonators)
+	{
+		if (!g_bShowAd[iClient])
+		{
+			if (!g_bShowFirstAdOnce[iClient])
+			{
+				g_bShowFirstAdOnce[iClient] = true;
+			}
+			else
+			{
+				return;
+			}
+		}
+	}
+	
 	// Whats our skip count?
 	if (!g_iAdInterval[iClient])
 	{
@@ -161,7 +190,6 @@ public Action:Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroa
 // Clear a client's Overlay
 public OverlayClean(iClient)
 {
-	
 	if(Client_IsIngame(iClient))
 	{
 		Client_SetScreenOverlay(iClient, "off");
@@ -201,4 +229,17 @@ public OnMapStart()
 		if (g_iOverlayFrequency < 1)
 			g_iOverlayFrequency = 1;
 	}
+}
+
+
+// For easier debugging
+public Action:Command_Bump(iClient, args)
+{
+	OverlayClean(iClient);
+	OverlaySet(iClient, g_sOverlayPaths[g_iAdRotation[iClient]]);
+	
+	// Bump the rotation now that we've shown an ad
+	g_iAdRotation[iClient] = (g_iAdRotation[iClient] + 1) % g_iOverlayAdsNum;
+	
+	return Plugin_Handled;
 }
