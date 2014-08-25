@@ -12,6 +12,7 @@
 // * 2013-11-11	-	1.1.4		-	Prevent spies from triggering ad (eventually detect dead ringer)
 // * 2013-11-27	-	1.1.5		-	Correctly detect dead ringer
 // * 2013-11-27	-	1.1.6		-	Donators only see first ad once, add sm_adpics_bump admin cmd to show ads manually 
+// * 2014-08-25	-	1.1.7		-	Don't show ads to spectators 
 //	------------------------------------------------------------------------------------
 
 #pragma semicolon 1
@@ -23,7 +24,7 @@
 #include <tf2_stocks>						// TF2_IsPlayerInCondition, TF_DEATHFLAG_DEADRINGER
 
 // DEFINES
-#define PLUGIN_VERSION			"1.1.6"
+#define PLUGIN_VERSION			"1.1.7"
 #define PLUGIN_PRINT_NAME		"[AdPics]"					// Used for self-identification in chat/logging
 #define PATH_CFG_FILE			"configs/adpics.txt"		// This is where the overlays are called out
 
@@ -148,6 +149,10 @@ public Action:Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroa
 
 	// Did client leave game?
 	if (iClient == 0)
+		return;
+		
+	// Is client spectating?
+	if (IsClientObserver(iClient))
 		return;
 	
 	// Weed out dead ringer fake death event
